@@ -730,6 +730,15 @@ impl Client {
         self.tx.subscribe()
     }
 
+    /// Waits until the client's bus connection closes.
+    ///
+    /// Receivers from [`Client::subscribe`] stay open while the client lives,
+    /// even once the bus is gone, so a consumer that should reconnect
+    /// after losing the bus can wait on this as well.
+    pub async fn closed(&self) {
+        self.connection.closed().await;
+    }
+
     /// Gets all current items, including their menus if present.
     #[cfg(feature = "data")]
     #[must_use]
