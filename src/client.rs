@@ -416,7 +416,9 @@ impl Client {
 
         let dbus_proxy = DBusProxy::new(connection).await?;
 
-        let mut disconnect_stream = dbus_proxy.receive_name_owner_changed().await?;
+        let mut disconnect_stream = dbus_proxy
+            .receive_name_owner_changed_with_args(&[(0, destination)])
+            .await?;
         let mut props_changed = notifier_item_proxy.inner().receive_all_signals().await?;
 
         loop {
