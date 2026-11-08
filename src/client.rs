@@ -416,7 +416,11 @@ impl Client {
 
         let dbus_proxy = DBusProxy::new(connection).await?;
 
-        let mut disconnect_stream = dbus_proxy.receive_name_owner_changed().await?;
+        // myshell: only this item's name. Unfiltered, every client that
+        // joins or leaves the session bus woke the tray thread once per item.
+        let mut disconnect_stream = dbus_proxy
+            .receive_name_owner_changed_with_args(&[(0, destination)])
+            .await?;
         let mut props_changed = notifier_item_proxy.inner().receive_all_signals().await?;
 
         loop {
@@ -726,6 +730,16 @@ impl Client {
     #[must_use]
     pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.tx.subscribe()
+    }
+
+    /// Waits until the client's bus connection is closed.
+    ///
+    /// The events channel stays open while the client lives,
+    /// so a consumer that wants to reconnect after losing the bus
+    /// should wait on this as well.
+    // myshell: added. `subscribe`'s receiver never closes on bus loss.
+    pub async fn closed(&self) {
+        self.connection.closed().await;
     }
 
     /// Gets all current items, including their menus if present.
